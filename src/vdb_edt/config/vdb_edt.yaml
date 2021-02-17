@@ -1,0 +1,26 @@
+# probabilistic mapping
+l_free: -0.13 
+l_occu: 1.01 
+l_max: 3.5 
+l_min: -2.0 
+l_thresh: 0.0 
+
+# occupancy grid map
+vox_size: 0.1 
+start_range: 0.00 
+sensor_range: 50.00 
+
+# euclidean distance map
+vdbedt_version: 1  # 1 - improved version
+max_update_dist: 50.0 
+edt_update_duration: 0.5 
+
+# map visualization
+vis_update_duration: 2.0 
+vis_slice_level: 2.00  # visualization slice in z-axis
+vis_map_minx: -100.0 
+vis_map_miny: -100.0 
+vis_map_minz: -10.0 
+vis_map_maxx: 100.0 
+vis_map_maxy: 100.0 
+vis_map_maxz: 10.0
