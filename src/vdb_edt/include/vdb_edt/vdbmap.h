@@ -69,14 +69,12 @@
 #define POSE_QUEUE_SIZE 20
 using namespace openvdb;
 
-
-
-class VDBMap{
+class VDBMap
+{
 
 public:
     VDBMap();
     ~VDBMap();
-
 
 private:
     // General parameters
@@ -90,7 +88,6 @@ private:
     double START_RANGE, SENSOR_RANGE;
     int HIT_THICKNESS;
 
-
     // VDB map
     int VERSION;
     double MAX_UPDATE_DIST;
@@ -100,19 +97,16 @@ private:
     double VIS_UPDATE_DURATION;
     double VIS_SLICE_LEVEL; // in meters
 
-
-
 protected:
     // Ros related
     std::string node_name_;
-    ros::NodeHandle* node_handle_;
-    ros::NodeHandle* private_node_handle_;
+    ros::NodeHandle *node_handle_;
+    ros::NodeHandle *private_node_handle_;
     // Returns the name the user gave to the node/nodelet
     std::string get_node_name();
     // Get node handles.
-    ros::NodeHandle* get_node_handle();
-    ros::NodeHandle* get_private_node_handle();
-
+    ros::NodeHandle *get_node_handle();
+    ros::NodeHandle *get_private_node_handle();
 
 public:
     typedef sensor_msgs::PointCloud2 CloudMsg;
@@ -137,29 +131,17 @@ public:
 
     // general dataset with tf and point cloud
     tf::TransformListener tfListener_;
-    tf::MessageFilter<CloudMsg>* tfPointCloudSub_;
-    message_filters::Subscriber<CloudMsg>* pointCloudSub_;
-    void cloud_callback(const CloudMsg::ConstPtr& pc_msg);
-
+    tf::MessageFilter<CloudMsg> *tfPointCloudSub_;
+    message_filters::Subscriber<CloudMsg> *pointCloudSub_;
+    void cloud_callback(const CloudMsg::ConstPtr &pc_msg);
 
     /*** specially designed for lady_and_cow dataset
          there is a sync problem in this dataset
     */
     bool msg_ready_;
-    tf::Vector3 origin_;
-    PoseMsg latest_pose_;
-    ros::Subscriber pose_sub_;
-    ros::Subscriber cloud_sub_;
-    std::queue<PoseMsg> pose_queue_;
-    std::queue<CloudMsg> cloud_queue_;
-    void sync_pose_and_cloud_fiesta();
-    bool sync_pose_and_cloud(PoseMsg &latest_pose, const CloudMsg &latest_cloud);
-    void lady_cow_pose_callback(const PoseMsg::ConstPtr& pose);
-    void lady_cow_cloud_callback(const CloudMsg::ConstPtr& cloud);
-
+    
 
 private: // occupancy map
-
     typedef pcl::PointCloud<pcl::PointXYZ> XYZCloud;
     typedef pcl::PointCloud<pcl::PointXYZI> XYZICloud;
 
@@ -167,16 +149,14 @@ private: // occupancy map
     openvdb::FloatGrid::Ptr grid_logocc_;
 
     // major functions
-    void set_voxel_size(openvdb::GridBase& grid, double vs);
-    void update_occmap(FloatGrid::Ptr grid_map, const tf::Vector3& origin, XYZCloud::Ptr xyz);
+    void set_voxel_size(openvdb::GridBase &grid, double vs);
+    void update_occmap(FloatGrid::Ptr grid_map, const tf::Vector3 &origin, XYZCloud::Ptr xyz);
 
     // visualization
-    void grid_to_pcl(FloatGrid::Ptr grid, FloatGrid::ValueType thresh, XYZICloud::Ptr& pc_out);
+    void grid_to_pcl(FloatGrid::Ptr grid, FloatGrid::ValueType thresh, XYZICloud::Ptr &pc_out);
     void grid_message(FloatGrid::Ptr &grid, CloudMsg &disp_msg);
 
-
 private: // distance map
-
     typedef std::vector<openvdb::math::Coord> CoordList;
     typedef visualization_msgs::Marker VisMarker;
 
@@ -193,13 +173,9 @@ private: // distance map
     void get_slice_marker(VisMarker &marker, int marker_id,
                           double slice, double max_sqdist);
 
-
 private: // pose correction for lady and cow dataset
     int occu_update_count_;
     int dist_update_count_;
-    Eigen::Matrix4d cur_transform_;
-    Eigen::Matrix4d ref_transform_;
-    Eigen::Matrix4d T_B_C_, T_D_B_;
 };
 
 #endif
