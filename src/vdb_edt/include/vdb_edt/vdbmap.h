@@ -66,7 +66,6 @@
 #include "vdb_edt/dynamicVDBEDT.h"
 #include "vdb_edt/timing.h"
 
-#define POSE_QUEUE_SIZE 20
 using namespace openvdb;
 
 class VDBMap
@@ -139,7 +138,6 @@ public:
          there is a sync problem in this dataset
     */
     bool msg_ready_;
-    
 
 private: // occupancy map
     typedef pcl::PointCloud<pcl::PointXYZ> XYZCloud;
@@ -173,9 +171,10 @@ private: // distance map
     void get_slice_marker(VisMarker &marker, int marker_id,
                           double slice, double max_sqdist);
 
-private: // pose correction for lady and cow dataset
+private: 
     int occu_update_count_;
     int dist_update_count_;
+
 };
 
 #endif
