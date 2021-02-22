@@ -82,6 +82,55 @@ VDBMap::VDBMap() : L_FREE(-0.13), L_OCCU(+1.01), L_THRESH(0.0), L_MAX(+3.5), L_M
                                                   &VDBMap::visualize_maps, this);
 }
 
+VDBMap::VDBMap(const ros::NodeHandle &nh,
+               const ros::NodeHandle &nh_private)
+    : nh_(nh), nh_private_(nh_private),
+      L_FREE(-0.13), L_OCCU(+1.01), L_THRESH(0.0), L_MAX(+3.5), L_MIN(-2.0), VOX_SIZE(0.05),
+      START_RANGE(0.0), SENSOR_RANGE(5.0), HIT_THICKNESS(1), VERSION(1),
+      MAX_UPDATE_DIST(20.0), EDT_UPDATE_DURATION(0.5), VIS_UPDATE_DURATION(10),
+      VIS_MAP_MINX(-200.0), VIS_MAP_MINY(-200.0), VIS_MAP_MINZ(-1.0),
+      VIS_MAP_MAXX(+200.0), VIS_MAP_MAXY(+200.0), VIS_MAP_MAXZ(10.0), VIS_SLICE_LEVEL(2.0),
+      msg_ready_(false), occu_update_count_(0), dist_update_count_(0)
+{
+    setup_parameters();
+    load_mapping_para();
+
+    // general synced dataset
+    pointCloudSub_ = new message_filters::Subscriber<CloudMsg>(nh_, pcl_topic, 5);
+    tfPointCloudSub_ = new tf::MessageFilter<CloudMsg>(*pointCloudSub_, tfListener_, worldframeId, 5);
+    tfPointCloudSub_->registerCallback(boost::bind(&VDBMap::cloud_callback, this, _1));
+
+    // visualization dataset
+    occu_vis_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/occ_grid", 5);
+    slice_vis_pub_ = nh_.advertise<VisMarker>("/dist_slice", 5);
+
+    // initialization grid map
+    openvdb::initialize();
+    grid_logocc_ = openvdb::FloatGrid::create(0.0);
+    this->set_voxel_size(*grid_logocc_, VOX_SIZE);
+    max_coor_dist_ = int(MAX_UPDATE_DIST / VOX_SIZE);
+    max_coor_sqdist_ = max_coor_dist_ * max_coor_dist_;
+    grid_distance_ = std::make_shared<DynamicVDBEDT>(max_coor_dist_);
+    grid_distance_->initialize(dist_map_, VOX_SIZE, VERSION);
+    grid_distance_->setAccessor(dist_map_);
+
+    // convert SENSOR_RANGE to index space
+    FloatGrid::Accessor acc = grid_logocc_->getAccessor();
+    Vec3d max_sense_dist(SENSOR_RANGE);
+    Vec3d sense_range_ijk = grid_logocc_->worldToIndex(max_sense_dist);
+    SENSOR_RANGE = sense_range_ijk.x();
+
+    Vec3d min_sense_dist(START_RANGE);
+    Vec3d min_sense_ijk = grid_logocc_->worldToIndex(min_sense_dist);
+    START_RANGE = min_sense_ijk.x();
+
+    // timer for distance map updation
+    update_edt_timer_ = nh_.createTimer(ros::Duration(EDT_UPDATE_DURATION),
+                                                  &VDBMap::update_edtmap, this);
+    update_vis_timer_ = nh_.createTimer(ros::Duration(VIS_UPDATE_DURATION),
+                                                  &VDBMap::visualize_maps, this);
+}
+
 void VDBMap::cloud_callback(const CloudMsg::ConstPtr &pc_msg)
 {
     tf::StampedTransform transform;
@@ -118,7 +167,6 @@ void VDBMap::cloud_callback(const CloudMsg::ConstPtr &pc_msg)
     timing::Timing::Print(std::cout);
     msg_ready_ = true;
 }
-
 
 VDBMap::~VDBMap()
 {

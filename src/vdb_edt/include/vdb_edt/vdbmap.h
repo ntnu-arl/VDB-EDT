@@ -72,7 +72,11 @@ class VDBMap
 {
 
 public:
+    // typedef std::shared_ptr<VDBMap> Ptr;
+
     VDBMap();
+    VDBMap(const ros::NodeHandle &nh,
+           const ros::NodeHandle &nh_private);
     ~VDBMap();
 
 private:
@@ -101,6 +105,9 @@ protected:
     std::string node_name_;
     ros::NodeHandle *node_handle_;
     ros::NodeHandle *private_node_handle_;
+    // To pass for VDBMap wrapper
+    ros::NodeHandle nh_;
+    ros::NodeHandle nh_private_;
     // Returns the name the user gave to the node/nodelet
     std::string get_node_name();
     // Get node handles.
@@ -171,10 +178,9 @@ private: // distance map
     void get_slice_marker(VisMarker &marker, int marker_id,
                           double slice, double max_sqdist);
 
-private: 
+private:
     int occu_update_count_;
     int dist_update_count_;
-
 };
 
 #endif
