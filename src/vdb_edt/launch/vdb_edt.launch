@@ -8,7 +8,7 @@
 	<node name="vdbmap" pkg="vdb_edt" type="vdb_edt_node">
 		<rosparam command="load" file="$(find vdb_edt)/config/vdb_edt.yaml" />
 		<!-- <remap from="cloud_in" to="/os1_node/points_raw" /> -->
-		<remap from="cloud_in" to="/delta/rgbd/camera_depth/depth/points" />
+		<!-- <remap from="cloud_in" to="/delta/rgbd/camera_depth/depth/points" /> -->
 	</node>
 
 	<group if="$(arg rviz)">

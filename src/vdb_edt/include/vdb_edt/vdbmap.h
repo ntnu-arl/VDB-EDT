@@ -72,7 +72,7 @@ class VDBMap
 {
 
 public:
-    // typedef std::shared_ptr<VDBMap> Ptr;
+    typedef std::shared_ptr<VDBMap> Ptr;
 
     VDBMap();
     VDBMap(const ros::NodeHandle &nh,
@@ -81,6 +81,9 @@ public:
 
 private:
     // General parameters
+    ros::NodeHandle nh_;
+    ros::NodeHandle nh_private_;
+
     std::string pcl_topic;
     std::string worldframeId;
     std::string robotframeId;
@@ -106,8 +109,6 @@ protected:
     ros::NodeHandle *node_handle_;
     ros::NodeHandle *private_node_handle_;
     // To pass for VDBMap wrapper
-    ros::NodeHandle nh_;
-    ros::NodeHandle nh_private_;
     // Returns the name the user gave to the node/nodelet
     std::string get_node_name();
     // Get node handles.

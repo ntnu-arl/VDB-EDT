@@ -92,19 +92,23 @@ VDBMap::VDBMap(const ros::NodeHandle &nh,
       VIS_MAP_MAXX(+200.0), VIS_MAP_MAXY(+200.0), VIS_MAP_MAXZ(10.0), VIS_SLICE_LEVEL(2.0),
       msg_ready_(false), occu_update_count_(0), dist_update_count_(0)
 {
-    setup_parameters();
-    load_mapping_para();
 
-    // general synced dataset
-    pointCloudSub_ = new message_filters::Subscriber<CloudMsg>(nh_, pcl_topic, 5);
+    // setup_parameters();
+    // load_mapping_para();
+    load_planning_para();
+    ROS_INFO_THROTTLE(1, "inside VDBMap()");
+
+    // // general synced dataset
+    pointCloudSub_ = new message_filters::Subscriber<CloudMsg>(nh_, "pointcloud", 5);
     tfPointCloudSub_ = new tf::MessageFilter<CloudMsg>(*pointCloudSub_, tfListener_, worldframeId, 5);
     tfPointCloudSub_->registerCallback(boost::bind(&VDBMap::cloud_callback, this, _1));
 
-    // visualization dataset
+    ROS_INFO_THROTTLE(1, "subscribed");
+    // // visualization dataset
     occu_vis_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/occ_grid", 5);
     slice_vis_pub_ = nh_.advertise<VisMarker>("/dist_slice", 5);
 
-    // initialization grid map
+    // // initialization grid map
     openvdb::initialize();
     grid_logocc_ = openvdb::FloatGrid::create(0.0);
     this->set_voxel_size(*grid_logocc_, VOX_SIZE);
@@ -126,9 +130,9 @@ VDBMap::VDBMap(const ros::NodeHandle &nh,
 
     // timer for distance map updation
     update_edt_timer_ = nh_.createTimer(ros::Duration(EDT_UPDATE_DURATION),
-                                                  &VDBMap::update_edtmap, this);
+                                        &VDBMap::update_edtmap, this);
     update_vis_timer_ = nh_.createTimer(ros::Duration(VIS_UPDATE_DURATION),
-                                                  &VDBMap::visualize_maps, this);
+                                        &VDBMap::visualize_maps, this);
 }
 
 void VDBMap::cloud_callback(const CloudMsg::ConstPtr &pc_msg)
@@ -199,7 +203,6 @@ void VDBMap::set_voxel_size(openvdb::GridBase &grid, double vs)
     tf->postTranslate(offset);
     grid.setTransform(tf);
 }
-
 //////////////////////////////////////////////////////////////////////////////////
 
 void VDBMap::setup_parameters()
@@ -426,8 +429,211 @@ bool VDBMap::load_mapping_para()
 
 bool VDBMap::load_planning_para()
 {
-    //   ros::NodeHandle* pnh = get_private_node_handle();
-    std::cout << "planning parameters no set !" << std::endl;
+    // pcl topic
+    if (nh_private_.param<std::string>("pcl_topic", pcl_topic, ""))
+    {
+        ROS_INFO("Parameter pcl_topic set to: %s", pcl_topic.c_str());
+    }
+    else
+    {
+        ROS_ERROR("Parameter pcl_topic not set.");
+        return false;
+    }
+    // world frame id
+    if (nh_private_.param<std::string>("world_frame_id", worldframeId, "world"))
+    {
+        ROS_INFO("Parameter world_frame_id set to: %s", worldframeId.c_str());
+    }
+    else
+    {
+        ROS_ERROR("Parameter world_frame_id not set.");
+        return false;
+    }
+    // robot frame id
+    if (nh_private_.param<std::string>("robot_frame_id", robotframeId, "robot"))
+    {
+        ROS_INFO("Parameter robot_frame_id to: %s", robotframeId.c_str());
+    }
+    else
+    {
+        ROS_ERROR("Parameter robot_frame_id not set.");
+        return false;
+    }
+
+    // voxel map parameters
+    if (nh_private_.param<double>("l_free", L_FREE, L_FREE))
+    {
+        ROS_INFO("Overriding Parameter L_FREE to: %f", L_FREE);
+    }
+    else
+    {
+        ROS_WARN("Using the default L_FREE: %f", L_FREE);
+    }
+
+    if (nh_private_.param<double>("l_occu", L_OCCU, L_OCCU))
+    {
+        ROS_INFO("Overriding Parameter L_OCCU to: %f", L_OCCU);
+    }
+    else
+    {
+        ROS_WARN("Using the default L_OCCU: %f", L_OCCU);
+    }
+
+    if (nh_private_.param<double>("l_max", L_MAX, L_MAX))
+    {
+        ROS_INFO("Overriding Parameter L_MAX to: %f", L_MAX);
+    }
+    else
+    {
+        ROS_WARN("Using the default L_MAX: %f", L_MAX);
+    }
+
+    if (nh_private_.param<double>("l_min", L_MIN, L_MIN))
+    {
+        ROS_INFO("Overriding Parameter L_MIN to: %f", L_MIN);
+    }
+    else
+    {
+        ROS_WARN("Using the default L_MIN: %f", L_MIN);
+    }
+
+    if (nh_private_.param<double>("l_thresh", L_THRESH, L_THRESH))
+    {
+        ROS_INFO("Overriding Parameter L_THRESH to: %f", L_THRESH);
+    }
+    else
+    {
+        ROS_WARN("Using the default L_THRESH: %f", L_THRESH);
+    }
+
+    if (nh_private_.param<double>("vox_size", VOX_SIZE, VOX_SIZE))
+    {
+        ROS_INFO("Overriding Parameter VOX_SIZE to: %f", VOX_SIZE);
+    }
+    else
+    {
+        ROS_WARN("Using the default VOX_SIZE: %f", VOX_SIZE);
+    }
+
+    if (nh_private_.param<double>("start_range", START_RANGE, START_RANGE))
+    {
+        ROS_INFO("Overriding Parameter START_RANGE to: %f", START_RANGE);
+    }
+    else
+    {
+        ROS_WARN("Using the default START_RANGE: %f", START_RANGE);
+    }
+
+    if (nh_private_.param<double>("sensor_range", SENSOR_RANGE, SENSOR_RANGE))
+    {
+        ROS_INFO("Overriding Parameter SENSOR_RANGE to: %f", SENSOR_RANGE);
+    }
+    else
+    {
+        ROS_WARN("Using the default SENSOR_RANGE: %f", SENSOR_RANGE);
+    }
+
+    // parameters for vdb edt
+    if (nh_private_.param<int>("vdbedt_version", VERSION, VERSION))
+    {
+        ROS_INFO("Overriding Parameter VDBEDT-VERSION to: %d", VERSION);
+    }
+    else
+    {
+        ROS_WARN("Using the default VDBEDT-VERSION: %d", VERSION);
+    }
+
+    if (nh_private_.param<double>("max_update_dist", MAX_UPDATE_DIST, MAX_UPDATE_DIST))
+    {
+        ROS_INFO("Overriding Parameter MAX_UPDATE_DIST to: %f", MAX_UPDATE_DIST);
+    }
+    else
+    {
+        ROS_WARN("Using the default MAX_UPDATE_DIST: %f", MAX_UPDATE_DIST);
+    }
+
+    if (nh_private_.param<double>("edt_update_duration", EDT_UPDATE_DURATION, EDT_UPDATE_DURATION))
+    {
+        ROS_INFO("Overriding Parameter EDT_UPDATE_DURATION to: %f", EDT_UPDATE_DURATION);
+    }
+    else
+    {
+        ROS_WARN("Using the default EDT_UPDATE_DURATION: %f", EDT_UPDATE_DURATION);
+    }
+
+    // Parameters for visualization
+    if (nh_private_.param<double>("vis_update_duration", VIS_UPDATE_DURATION, VIS_UPDATE_DURATION))
+    {
+        ROS_INFO("Overriding Parameter VIS_UPDATE_DURATION to: %f", VIS_UPDATE_DURATION);
+    }
+    else
+    {
+        ROS_WARN("Using the default VIS_UPDATE_DURATION: %f", VIS_UPDATE_DURATION);
+    }
+
+    if (nh_private_.param<double>("vis_slice_level", VIS_SLICE_LEVEL, VIS_SLICE_LEVEL))
+    {
+        ROS_INFO("Overriding Parameter VIS_SLICE_LEVEL to: %f", VIS_SLICE_LEVEL);
+    }
+    else
+    {
+        ROS_WARN("Using the default VIS_SLICE_LEVEL: %f", VIS_SLICE_LEVEL);
+    }
+
+    if (nh_private_.param<double>("vis_map_minx", VIS_MAP_MINX, VIS_MAP_MINX))
+    {
+        ROS_INFO("Overriding Parameter VIS_MAP_MINX to: %f", VIS_MAP_MINX);
+    }
+    else
+    {
+        ROS_WARN("Using the default VIS_MAP_MINX: %f", VIS_MAP_MINX);
+    }
+
+    if (nh_private_.param<double>("vis_map_miny", VIS_MAP_MINY, VIS_MAP_MINY))
+    {
+        ROS_INFO("Overriding Parameter VIS_MAP_MINY to: %f", VIS_MAP_MINY);
+    }
+    else
+    {
+        ROS_WARN("Using the default VIS_MAP_MINY: %f", VIS_MAP_MINY);
+    }
+
+    if (nh_private_.param<double>("vis_map_minz", VIS_MAP_MINZ, VIS_MAP_MINZ))
+    {
+        ROS_INFO("Overriding Parameter VIS_MAP_MINZ to: %f", VIS_MAP_MINZ);
+    }
+    else
+    {
+        ROS_WARN("Using the default VIS_MAP_MINZ: %f", VIS_MAP_MINZ);
+    }
+
+    if (nh_private_.param<double>("vis_map_maxx", VIS_MAP_MAXX, VIS_MAP_MAXX))
+    {
+        ROS_INFO("Overriding Parameter VIS_MAP_MAXX to: %f", VIS_MAP_MAXX);
+    }
+    else
+    {
+        ROS_WARN("Using the default VIS_MAP_MAXX: %f", VIS_MAP_MAXX);
+    }
+
+    if (nh_private_.param<double>("vis_map_maxy", VIS_MAP_MAXY, VIS_MAP_MAXY))
+    {
+        ROS_INFO("Overriding Parameter VIS_MAP_MAXY to: %f", VIS_MAP_MAXY);
+    }
+    else
+    {
+        ROS_WARN("Using the default VIS_MAP_MAXY: %f", VIS_MAP_MAXY);
+    }
+
+    if (nh_private_.param<double>("vis_map_maxz", VIS_MAP_MAXZ, VIS_MAP_MAXZ))
+    {
+        ROS_INFO("Overriding Parameter VIS_MAP_MAXZ to: %f", VIS_MAP_MAXZ);
+    }
+    else
+    {
+        ROS_WARN("Using the default VIS_MAP_MAXZ: %f", VIS_MAP_MAXZ);
+    }
+
     return true;
 }
 
