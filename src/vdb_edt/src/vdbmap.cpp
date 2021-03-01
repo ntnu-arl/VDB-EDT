@@ -98,17 +98,16 @@ VDBMap::VDBMap(const ros::NodeHandle &nh,
     load_planning_para();
     ROS_INFO_THROTTLE(1, "inside VDBMap()");
 
-    // // general synced dataset
+    // // general synced data
     pointCloudSub_ = new message_filters::Subscriber<CloudMsg>(nh_, "pointcloud", 5);
     tfPointCloudSub_ = new tf::MessageFilter<CloudMsg>(*pointCloudSub_, tfListener_, worldframeId, 5);
     tfPointCloudSub_->registerCallback(boost::bind(&VDBMap::cloud_callback, this, _1));
 
-    ROS_INFO_THROTTLE(1, "subscribed");
-    // // visualization dataset
+    // // visualization
     occu_vis_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/occ_grid", 5);
     slice_vis_pub_ = nh_.advertise<VisMarker>("/dist_slice", 5);
 
-    // // initialization grid map
+    // // initialize grid map
     openvdb::initialize();
     grid_logocc_ = openvdb::FloatGrid::create(0.0);
     this->set_voxel_size(*grid_logocc_, VOX_SIZE);
@@ -202,6 +201,16 @@ void VDBMap::set_voxel_size(openvdb::GridBase &grid, double vs)
     openvdb::math::Transform::Ptr tf = openvdb::math::Transform::createLinearTransform(vs);
     tf->postTranslate(offset);
     grid.setTransform(tf);
+}
+///////////////////////////// planner interaction /////////////////////////////////
+double VDBMap::get_voxel_size()
+{
+    return this->VOX_SIZE;
+}
+
+bool VDBMap::get_cell_status_point(int x, int y, int z)
+{
+    return grid_distance_->isOccupied(x, y, z);
 }
 //////////////////////////////////////////////////////////////////////////////////
 

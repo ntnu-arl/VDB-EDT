@@ -142,9 +142,6 @@ public:
     message_filters::Subscriber<CloudMsg> *pointCloudSub_;
     void cloud_callback(const CloudMsg::ConstPtr &pc_msg);
 
-    /*** specially designed for lady_and_cow dataset
-         there is a sync problem in this dataset
-    */
     bool msg_ready_;
 
 private: // occupancy map
@@ -182,6 +179,12 @@ private: // distance map
 private:
     int occu_update_count_;
     int dist_update_count_;
+
+    // planner interaction
+private:
+public:
+    double get_voxel_size();
+    bool get_cell_status_point(int x, int y, int z);
 };
 
 #endif

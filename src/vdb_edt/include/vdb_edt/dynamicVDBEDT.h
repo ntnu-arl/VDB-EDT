@@ -75,6 +75,10 @@ public:
 
   void commitAndColorize(CoordList &freeToOccu, CoordList &unkwToOccu,
                          CoordList &occuToFree, CoordList &unkwToFree);
+  /* fetch map cell and check Occu field */
+  bool isOccupied(Coord &xyz) const;
+  bool isOccupied(Vec3i &xyz) const;
+  bool isOccupied(int &x, int &y, int &z) const;
 
   std::shared_ptr<EDTGrid::Accessor> dist_acc_;
   std::vector<Coord> obst_list_;
@@ -129,10 +133,10 @@ protected:
   boost::function<void(int &nx, int &ny, int &nz, dataCell &c)> inspectCellLowerF;
 
 private:
-  /* fetch map cell and check Occu field */
-  inline bool isOccupied(Coord &xyz) const;
-  inline bool isOccupied(Vec3i &xyz) const;
-  inline bool isOccupied(int &x, int &y, int &z) const;
+  // /* fetch map cell and check Occu field */
+  // inline bool isOccupied(Coord &xyz) const;
+  // inline bool isOccupied(Vec3i &xyz) const;
+  // inline bool isOccupied(int &x, int &y, int &z) const;
 
   int getSqDistance(int i, int j, int k);
   void visualization(int layer,
